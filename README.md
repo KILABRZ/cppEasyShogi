@@ -37,7 +37,7 @@
 - 把正規的棋譜、棋盤標示方式改一改。做個可以讀棋譜的程序。
 - 串 GUI。
 
-## update 
+## update record
 - 2020/2/20
 - 更新了 judger.cpp, gameAnalysis.cpp, shogi.cpp, main.cpp
 - 新增了一個簡單的評分模型（基於人擬定的決策模式），一個會做 alphaBeta 搜索的 bot，可以達成幾乎必定擊敗 random walk 的成績。
