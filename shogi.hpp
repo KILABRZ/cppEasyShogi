@@ -12,6 +12,9 @@ public:
 	int gomaPos[82];
 	int round;
 
+	int SENTEKINGNUM;
+	int GOTEKINGNUM;
+
 	vector<queue<int>> gomaTable;
 
 	vector<int> boardFixedAttacking[2][82];
@@ -24,6 +27,25 @@ public:
 	void PrintAttackBoard();
 	vector<int> FetchMove(int request);
 	void MakeMove(int move);
+
+	vector<unsigned char> SaveGame();
+	void LoadGame(vector<unsigned char>);
+
+	Shogi operator=(Shogi a){
+		for(int i=0;i<=81;i++){
+			board[i] = a.board[i];
+			boardChesser[i] = a.boardChesser[i];
+			gomaKind[i] = a.gomaKind[i];
+			gomaPos[i] = a.gomaPos[i];
+		}
+		round = a.round;
+		SENTEKINGNUM = a.SENTEKINGNUM;
+		GOTEKINGNUM = a.GOTEKINGNUM;
+		for(int i=0;i<16;i++){
+			gomaTable[i] = a.gomaTable[i];
+		}
+		return *this;
+	}
 };
 
 const int FOOT = 0;
@@ -42,8 +64,7 @@ const int PLAYING = 1;
 const int SENTE = 0;
 const int GOTE = 1;
 
-const int SENTEKINGNUM = 10;
-const int GOTEKINGNUM = 30;
+
 
 int posSuji(int pos);
 int posDan(int pos);
@@ -69,3 +90,34 @@ void printMove(int move);
 
 bool posOnLine(int pa, int pb, int pc);
 bool posInMiddle(int pl, int pm, int pr);
+
+
+const int ALPHA = 0;
+const int BETA = 1;
+
+class ShogiBot{
+public:
+
+	vector<char> judgingVector;
+	int bestMove;
+
+
+	void RandomInit();
+	void SpecialInit(vector<char> jV);
+	int judging(Shogi s);
+	int alphaBetaTree(Shogi s, int alpha, int beta, int player, int lastDepth, int maxDepth, double beamsize);
+	int decideMove(Shogi s, int depth, double beamsize);
+
+	ShogiBot operator=(ShogiBot a){
+		judgingVector = a.judgingVector;
+		bestMove = a.bestMove;
+		return *this;
+	}
+
+};
+
+int gomaStrength(Shogi s, vector<char> jV);
+int aggressing(Shogi s, vector<char> jV);
+int spacing(Shogi s, vector<char> jV);
+int generalAttacking(Shogi s, vector<char> jV);
+int kingAttacking(Shogi s, vector<char> jV);

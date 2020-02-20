@@ -50,7 +50,8 @@ void Shogi::Init(){
 		boardBFlowAttacking[GOTE][i].reserve(10);
 	}
 
-
+	SENTEKINGNUM = 10;
+	GOTEKINGNUM = 30;
 
 	gomaKind[ 0] = genGomakind(CHARIOT, NORMAL, SENTE);		gomaPos[ 0] = genPos(9, 9);		
 	gomaKind[ 1] = genGomakind(CHARIOT, NORMAL, SENTE);		gomaPos[ 1] = genPos(1, 9);
@@ -278,7 +279,6 @@ vector<int> Shogi::FetchMove(int request){
 
 	vector<int> moveList;
 	moveList.reserve(1000);
-
 	for(int i=0;i<40;i++){
 
 		if(gomaPos[i] == -1)continue;
@@ -371,10 +371,10 @@ vector<int> Shogi::FetchMove(int request){
 							moveList.push_back(normalMove);
 						}
 						else if(eid != FOOT and eid != CHARIOT and eid != CASSIA){
-							moveList.push_back(normalMove);
 							if(eid < 6){
 								moveList.push_back(upgradeMove);
 							}
+							moveList.push_back(normalMove);
 						}
 						else if(eid == FOOT or eid == CHARIOT){
 							if(owner == SENTE and newDan == 1){
@@ -382,8 +382,8 @@ vector<int> Shogi::FetchMove(int request){
 							}else if(owner == GOTE and newDan == 9){
 								moveList.push_back(upgradeMove);
 							}else{
-								moveList.push_back(normalMove);
 								moveList.push_back(upgradeMove);
+								moveList.push_back(normalMove);
 							}
 						}else{
 							if(owner == SENTE and newDan <= 2){
@@ -391,8 +391,8 @@ vector<int> Shogi::FetchMove(int request){
 							}else if(owner == GOTE and newDan >= 8){
 								moveList.push_back(upgradeMove);
 							}else{
-								moveList.push_back(normalMove);
 								moveList.push_back(upgradeMove);
+								moveList.push_back(normalMove);
 							}
 						}
 					}
@@ -888,4 +888,70 @@ void Shogi::MakeMove(int move){
 	} 
 	round++;
 	return;
+}
+
+
+vector<unsigned char> Shogi::SaveGame(){
+	vector<unsigned char> gameDigest;
+	gameDigest.reserve(100);
+	for(int pos=0;pos<81;pos++){
+		int gomaNum = board[pos];
+		if(gomaNum == -1) gameDigest.push_back(255);
+		else gameDigest.push_back(gomaKind[gomaNum]);
+	}
+	for(int chesser=0;chesser<2;chesser++){
+		for(int i=0;i<8;i++){
+			int I = i + chesser * 8;
+			gameDigest.push_back(gomaTable[I].size());
+		}
+	}
+	gameDigest.push_back(round / 256);
+	gameDigest.push_back(round % 256);
+	return gameDigest;
+}
+
+void Shogi::LoadGame(vector<unsigned char> digest){
+	int gomaNumber = 0;
+	int offset = 0;
+	for(int pos=0;pos<81;pos++){
+		if(digest[pos] == 255){
+			board[pos] = -1;
+			boardChesser[pos] = -1;
+		}else{
+			board[pos] = gomaNumber;
+			boardChesser[pos] = gomakindChesser(digest[pos+offset]);
+			gomaKind[gomaNumber] = digest[pos+offset];
+			gomaPos[gomaNumber] = pos;
+			if(gomaKind[gomaNumber] == genGomakind(KING, NORMAL, SENTE)){
+				SENTEKINGNUM = gomaNumber;
+			}else if(gomaKind[gomaNumber] == genGomakind(KING, NORMAL, GOTE)){
+				GOTEKINGNUM = gomaNumber;
+			}
+			gomaNumber++;
+		}
+	}
+
+	offset = 81;
+
+	for(int chesser=0;chesser<2;chesser++){
+		for(int i=0;i<8;i++){
+			int I = i + chesser * 8;
+			while(!gomaTable[I].empty()){
+				gomaTable[I].pop();
+			}
+
+			for(int k=0;k<digest[I+offset];k++){
+				int gomakind = genGomakind(i, NORMAL, chesser);
+				gomaKind[gomaNumber] = gomakind;
+				gomaPos[gomaNumber] = -1;
+				gomaTable[I].push(gomaNumber);
+				gomaNumber++;
+			}
+		}
+	}
+	offset = 97;
+
+	round = 0;
+	round += digest[offset] * 256;
+	round += digest[offset+1];
 }
