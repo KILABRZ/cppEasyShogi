@@ -33,6 +33,12 @@
 
 ## future work
 - 徹底除錯。由於王手無視和打步詰的狀況很多，或許存在沒有找到的 bug。
-- 實作 ab 樹和詰將棋的題目搜索。實作 FetchMove 的 request 4。
+- 實作 FetchMove 的 request 4。
 - 把正規的棋譜、棋盤標示方式改一改。做個可以讀棋譜的程序。
 - 串 GUI。
+
+## update 
+- 2020/2/20
+- 更新了 judger.cpp, gameAnalysis.cpp, shogi.cpp, main.cpp
+- 新增了一個簡單的評分模型（基於人擬定的決策模式），一個會做 alphaBeta 搜索的 bot，可以達成幾乎必定擊敗 random walk 的成績。
+- 寫了一個遺傳算法來看看能不能 train 出好的結果，結果是無法。
