@@ -42,3 +42,7 @@
 - 更新了 judger.cpp, gameAnalysis.cpp, shogi.cpp, main.cpp
 - 新增了一個簡單的評分模型（基於人擬定的決策模式），一個會做 alphaBeta 搜索的 bot，可以達成幾乎必定擊敗 random walk 的成績。
 - 寫了一個遺傳算法來看看能不能 train 出好的結果，結果是無法。
+- 2020/3/5
+- 完成了「必須造成王手」的 fetchMove request，為 request 4，並新增了 request 5 用以處理詰將棋的特殊狀況。
+- 實作了一個詰將棋的盤面搜索，只是有一些 bug 產生，導致沒辦法正確回答（部分問題）。
+- 這幾個功能加上去後 code 變得越來越大了，要考慮一下 code clear。
