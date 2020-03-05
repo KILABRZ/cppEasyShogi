@@ -30,6 +30,9 @@ public:
 
 	vector<unsigned char> SaveGame();
 	void LoadGame(vector<unsigned char>);
+	void WhiteInit();
+	void SetGoma(int gomanum, int chesser, int upgrade, int position, int gomatable);
+	int RemoveGoma(int position, int gomatable);
 
 	Shogi operator=(Shogi a){
 		for(int i=0;i<=81;i++){
@@ -69,6 +72,7 @@ const int GOTE = 1;
 int posSuji(int pos);
 int posDan(int pos);
 int genPos(int suji, int dan);
+int genUPos(int chesser, int gomaid);
 int genGomakind(int id, int upgrade, int chesser);
 int gomakindID(int gomakind);
 int gomakindEID(int gomakind);

@@ -10,6 +10,17 @@ void saveLoadTest(Shogi s){
 	cout << s.round << "\n";
 }
 
+string vectorHexdump(vector<unsigned char> k){
+	string s;
+	char charset[17] = "0123456789ABCDEF";
+	for(char a : k){
+		unsigned char c = a;
+		s.append(1, charset[c/16]);
+		s.append(1, charset[c%16]);
+	}
+	return s;
+}
+
 string vectorHexdump(vector<char> k){
 	string s;
 	char charset[17] = "0123456789ABCDEF";
@@ -23,6 +34,18 @@ string vectorHexdump(vector<char> k){
 
 vector<char> vectorHexload(string s){
 	vector<char> c;
+	c.reserve(s.length()/2);
+	for(int i=0;i<s.length();i+=2){
+		char v = 0;
+		v += (s[i] - (s[i] >= 'A' ? ('A'-10) : ('0')))*16;
+		v += (s[i+1] - (s[i+1] >= 'A' ? ('A'-10) : ('0')));
+		c.push_back(v);
+	}
+	return c;
+}
+
+vector<unsigned char> UvectorHexload(string s){
+	vector<unsigned char> c;
 	c.reserve(s.length()/2);
 	for(int i=0;i<s.length();i+=2){
 		char v = 0;
@@ -259,11 +282,165 @@ void botTest(){
 	
 }
 
+void humanFightBot(){
+	ShogiBot gote;
+	gote.RandomInit();
+	vector<char> testV2 = vectorHexload("054B322864647850505050507D7D0103FFFF0101FEFF010101010303FD03FDFD640AF6FBFBFBFBFBFBFB0A0A03030A05FF0A0F0F0F0F0F5A0505050505050505050505050505011E");
+	gote.SpecialInit(testV2);
+	Shogi s;
+	s.Init();
 
+	while(true){
+		s.EasyBoardPrint();
+		vector<int> killingMoveList = s.FetchMove(4);
+		for(int move : killingMoveList){
+			printMove(move);
+		}cout << killingMoveList.size() << "\n";
+		vector<int> moveList = s.FetchMove(3);
+		if(moveList.size() == 0){
+			cout << "End\n";
+			break;
+		}
+		if(s.round % 2 == 0){
+			int move;
+			bool finish = false;
+			while(!finish){
+				int presuji, predan, newsuji, newdan, upgrade, playing;
+				cin >> presuji >> predan >> newsuji >> newdan >> upgrade >> playing;
+				if(playing){
+					move = genMove(presuji, genPos(newsuji, newdan), upgrade, playing);
+				}else{
+					move = genMove(genPos(presuji, predan), genPos(newsuji, newdan), upgrade, playing);
+				}
+				for(int m : moveList){
+					if(move == m){
+						finish = true;
+						break;
+					}
+				}
+			}
+			s.MakeMove(move);
+		}else{
+			int move = gote.decideMove(s, 3, 0.4);
+			s.MakeMove(move);
+		}
+		
+	}
+}
+
+void setGame(){
+	string cmd;
+	Shogi s;
+	s.WhiteInit();
+	queue<int> godTable[8];
+	for(int i=0;i<40;i++){
+		int gomaid = gomakindID(s.gomaKind[i]);
+		godTable[gomaid].push(i);
+	}
+
+	while(true){
+		cout << "Foot    Silver  Cassia  Chariot Flying  Angle   King   Gold  \n";
+		for(int i=0;i<8;i++){
+			cout << godTable[i].size() << "       ";
+		}
+		cout << "\n";
+		s.EasyBoardPrint();
+		
+		cout << "\n";
+		cin >> cmd;
+		if(cmd == "exit"){
+			break;
+		}else if(cmd == "set"){
+			int gomacode, suji, dan, chesser, upgrade, gomatable;
+			cin >> suji >> dan >> gomacode >>  chesser >> upgrade >> gomatable;
+			int pos = genPos(suji, dan);
+			int gomanum = godTable[gomacode].front();
+			godTable[gomacode].pop();
+			s.SetGoma(gomanum, chesser, upgrade, pos, gomatable);
+		}else if(cmd == "save"){
+			cout << vectorHexdump(s.SaveGame()) << "\n";
+		}else if(cmd == "all"){
+			for(int i=0;i<8;i++){
+				if(i == 6)continue;
+				while(!godTable[i].empty()){
+					int gomanum = godTable[i].front();
+					godTable[i].pop();
+					s.SetGoma(gomanum, GOTE, NORMAL, 0, 1);
+				}
+			}
+		}else if(cmd == "remove"){
+			int table, suji, dan, pos;
+			cin >> table >> suji >> dan;
+			if(table){
+				pos = genUPos(suji, dan);
+			}else{
+				pos = genPos(suji, dan);
+			}
+			int getGoma = s.RemoveGoma(pos, table);
+			int gomaid = gomakindID(s.gomaKind[getGoma]);
+			godTable[gomaid].push(getGoma);
+		}
+	}
+}
+
+int answerSheet[60];
+
+bool tsumeWalk(Shogi s, int depth){
+
+	int chesser = s.round % 2;
+	if(depth < 0){
+		if(chesser == SENTE)
+			return false;		
+		else return true;
+	}
+	
+	vector<int> moveList;
+	if(chesser == SENTE){
+		if(s.gomaPos[s.SENTEKINGNUM] == -1){
+			moveList = s.FetchMove(5);
+		}else{
+			moveList = s.FetchMove(4);
+		}	 
+	}else{
+		moveList = s.FetchMove(3);
+	}
+
+	for(int move : moveList){
+		Shogi ns = s;
+		ns.MakeMove(move);
+		
+		answerSheet[depth] = move;
+		bool answer = tsumeWalk(ns, depth-1);
+
+		if(chesser == SENTE and answer){
+			return true;
+		}
+		if(chesser == GOTE and !answer){
+			return false;
+		}
+	}
+	if(chesser == SENTE) return false;
+	else return true;
+}
+
+void solveTsumeShogi(){
+	vector<unsigned char> gamecode = UvectorHexload("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF11FFFFFFFFFFFFFFFF16FF01FFFFFFFFFFFF11FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF05FFFFFF000100000000000012000404020100040000");
+	vector<unsigned char> gamecode2 = UvectorHexload("FFFF1DFFFFFFFFFFFFFF16FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF08FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000100000100000111030404010100030000");
+	vector<unsigned char> gamecode3 = UvectorHexload("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF11FF16171002FFFFFF05FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000010100000011030303010100030000");
+
+	Shogi s;
+	s.Init();
+	s.LoadGame(gamecode3);
+	cout << tsumeWalk(s, 9) << "\n";
+	s.EasyBoardPrint();
+	for(int i=9;i>0;i--){
+		printMove(answerSheet[i]);
+	}
+}
 
 
 int main(){
 	srand(time(0));
 //	findbestvector(100, 50, 0.35);
-	botTest();
+	solveTsumeShogi();
 }

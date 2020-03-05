@@ -78,7 +78,9 @@ void printMove(int move){
 
 	if(!playing){
 		cout << "(" << preSuji << ", " << preDan 
-		<< ") => (" << newSuji << ", " << newDan << ")\n";
+		<< ") => (" << newSuji << ", " << newDan << ")";
+		if(upgrade) cout << " upgrade";
+		cout << "\n";
 	}else{
 		cout << "Playing " << IDPRES[prePos] << " at (" << newSuji << ", " << newDan << ")\n";
 	}
