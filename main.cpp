@@ -383,15 +383,25 @@ void setGame(){
 	}
 }
 
-int answerSheet[60];
+vector<int> killOrder(vector<int> moveList, Shogi s){
+	vector<int> newMoveList;
+	newMoveList.reserve(moveList.size());
 
-bool tsumeWalk(Shogi s, int depth){
+	for(int move : moveList){
+		int newPos = moveNewpos(move);
+		if(s.boardChesser[newPos] != -1)newMoveList.push_back(move);
+	}
+	for(int move : moveList){
+		int newPos = moveNewpos(move);
+		if(s.boardChesser[newPos] == -1)newMoveList.push_back(move);
+	}
+	return newMoveList;
+}
 
+int tsumeWalk(Shogi s, int depth){
 	int chesser = s.round % 2;
 	if(depth < 0){
-		if(chesser == SENTE)
-			return false;		
-		else return true;
+		return -1;
 	}
 	
 	vector<int> moveList;
@@ -405,13 +415,70 @@ bool tsumeWalk(Shogi s, int depth){
 		moveList = s.FetchMove(3);
 	}
 
+	if(chesser == GOTE){
+		moveList = killOrder(moveList, s);
+	}
+	
+
+	int bestAnswer = (chesser == SENTE ? -1 : 0);
+	int bestMove = -1;
+
 	for(int move : moveList){
 		Shogi ns = s;
-		ns.MakeMove(move);
-		
-		answerSheet[depth] = move;
-		bool answer = tsumeWalk(ns, depth-1);
+		ns.MakeMove(move);		
+		int answer = tsumeWalk(ns, depth-1);
 
+		if(chesser == SENTE and answer != -1){
+			if(bestAnswer == -1){
+				bestAnswer = answer+1;
+				bestMove = move;
+			}
+			else if(bestAnswer > answer+1){
+				bestAnswer = answer+1;
+				bestMove = move;
+			}
+		}
+		if(chesser == GOTE and bestAnswer != -1){
+			if(answer == -1){
+				bestAnswer = -1;
+				bestMove = move;
+				break;
+			}
+			else if(answer+1 > bestAnswer){
+				bestAnswer = answer+1;
+				bestMove = move;
+			}
+		}
+	}
+	
+	return bestAnswer;
+}
+
+bool tsumeWalkB(Shogi s, int depth){
+	int chesser = s.round % 2;
+	if(depth < 0){
+		return false;
+	}
+	
+	vector<int> moveList;
+	if(chesser == SENTE){
+		if(s.gomaPos[s.SENTEKINGNUM] == -1){
+			moveList = s.FetchMove(5);
+		}else{
+			moveList = s.FetchMove(4);
+		}	 
+	}else{
+		moveList = s.FetchMove(3);
+	}
+
+	if(chesser == GOTE){
+		moveList = killOrder(moveList, s);
+	}
+
+	for(int move : moveList){
+		Shogi ns = s;
+		ns.MakeMove(move);		
+		bool answer = tsumeWalkB(ns, depth-1);
 		if(chesser == SENTE and answer){
 			return true;
 		}
@@ -419,7 +486,7 @@ bool tsumeWalk(Shogi s, int depth){
 			return false;
 		}
 	}
-	if(chesser == SENTE) return false;
+	if(chesser == SENTE)return false;
 	else return true;
 }
 
@@ -431,11 +498,9 @@ void solveTsumeShogi(){
 	Shogi s;
 	s.Init();
 	s.LoadGame(gamecode3);
-	cout << tsumeWalk(s, 9) << "\n";
+
+	cout << tsumeWalkB(s, 11) << "\n";
 	s.EasyBoardPrint();
-	for(int i=9;i>0;i--){
-		printMove(answerSheet[i]);
-	}
 }
 
 
