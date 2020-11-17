@@ -313,7 +313,7 @@ vector<int> Shogi::FetchMove(int request){
 
 				if(owner == SENTE and newDan > 3 and preDan > 3){
 					moveList.push_back(normalMove);
-				}else if(owner == GOTE and newDan < 7 and newDan < 7){
+				}else if(owner == GOTE and newDan < 7 and preDan < 7){
 					moveList.push_back(normalMove);
 				}
 				else if(eid != FOOT and eid != CHARIOT and eid != CASSIA){
@@ -368,7 +368,7 @@ vector<int> Shogi::FetchMove(int request){
 						if(chesser != owner);
 						else if(owner == SENTE and newDan > 3 and preDan > 3){
 							moveList.push_back(normalMove);
-						}else if(owner == GOTE and newDan < 7 and newDan < 7){
+						}else if(owner == GOTE and newDan < 7 and preDan < 7){
 							moveList.push_back(normalMove);
 						}
 						else if(eid != FOOT and eid != CHARIOT and eid != CASSIA){
