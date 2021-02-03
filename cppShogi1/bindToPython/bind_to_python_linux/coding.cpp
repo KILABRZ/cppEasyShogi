@@ -91,18 +91,12 @@ vector<int> DecodeMove(int move){
 	int newPos = moveNewpos(move);
 	int upgrade = moveUpgrade(move);
 	int playing = movePlaying(move);
-	int preSuji = posSuji(prePos);
-	int preDan = posDan(prePos);
-	int newSuji = posSuji(newPos);
-	int newDan = posDan(newPos);
 
-	vector<int> ret {preSuji, preDan, newSuji, newDan, upgrade, playing};
+	vector<int> ret {prePos, newPos, upgrade, playing};
 	return ret;	
 }
 
 int EncodeMove(vector<int> move){
-	int prePos = genPos(move[0], move[1]);
-	int newPos = genPos(move[2], move[3]);
-	int nmove = genMove(prePos, newPos, move[4], move[5]);
+	int nmove = genMove(move[0], move[1], move[2], move[3]);
 	return nmove;
 }

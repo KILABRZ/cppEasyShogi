@@ -11,7 +11,8 @@ PYBIND11_MODULE(ShogiAgent, m){
 		.def("InitialBoard", &Shogi::InitialBoard)
 		.def("FetchMove", &Shogi::FetchMove)
 		.def("MakeMove", &Shogi::MakeMove)
-		.def("BoardState", &Shogi::BoardState);
+		.def("BoardState", &Shogi::BoardState)
+		.def("EasyBoardPrint", &Shogi::EasyBoardPrint);
 	m.def("DecodeMove", &DecodeMove);
 	m.def("EncodeMove", &EncodeMove);
 }
