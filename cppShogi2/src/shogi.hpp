@@ -1,14 +1,16 @@
 #include <vector>
+#include <iostream>
+using namespace std;
 
 class Shogi{
 public:
 
 	bool activated_flag;
-	unsigned char board[121];
-	unsigned char goma_cde[41];
-	short goma_pos[41];
+	uint8_t board[97];
+	uint8_t goma_cde[41];
+	uint8_t goma_pos[41];
 	
-	unsigned char round;
+	uint8_t round;
 
 	Shogi() {
 		activated_flag = false;
@@ -17,12 +19,13 @@ public:
 	void BoardInit();
 
 
-	vector<unsigned short> FetchMoves(unsigned char mode);
-	bool MakeMove(unsigned short move);
-	Shogi TryMove(unsigned short move);
-}
+	vector<uint16_t> FetchMoves(uint8_t mode);
+	bool MakeMove(uint16_t move);
+	void EasyBoardPrint();
+	//	Shogi TryMove(uint16_t move);
+};
 
-unsigned char MASK_goma_ezyid = 7;
-unsigned char MASK_goma_fulid = 15;
-unsigned char MASK_goma_owner = 32;
-unsigned char MASK_goma_onboard = 64;
+uint8_t MASK_goma_ezyid = 7;
+uint8_t MASK_goma_fulid = 15;
+uint8_t MASK_goma_owner = 16;
+uint8_t MASK_goma_onboard = 32;
