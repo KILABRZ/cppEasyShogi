@@ -1,7 +1,4 @@
 #include "shogi.hpp"
-#define outboard(x) (x>96)||(x%11>8)
-
-using namespace std;
 
 string note_table[32] = {
 	"+步 ", "+香 ", "+桂 ", "+銀 ", "+角 ", "+飛 ", "+金 ", "+王 ", "+と", "+杏 ", "+圭 ", "+全 ", "+馬 ", "+龍 ", "nothing", "nothing",
@@ -22,4 +19,5 @@ void Shogi::EasyBoardPrint() {
 			cout << note_table[goma_cde[unit]];
 		}
 	}
+	cout << "\n";
 }

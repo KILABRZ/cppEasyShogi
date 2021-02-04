@@ -25,7 +25,8 @@ public:
 	//	Shogi TryMove(uint16_t move);
 };
 
-uint8_t MASK_goma_ezyid = 7;
-uint8_t MASK_goma_fulid = 15;
-uint8_t MASK_goma_owner = 16;
-uint8_t MASK_goma_onboard = 32;
+#define outboard(x) ((x>96)||(x%11>8))
+const uint8_t MASK_goma_ezyid = 7;
+const uint8_t MASK_goma_fulid = 15;
+const uint8_t MASK_goma_owner = 16;
+const uint8_t MASK_goma_onboard = 32;

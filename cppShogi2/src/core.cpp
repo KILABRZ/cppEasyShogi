@@ -1,5 +1,5 @@
 #include "shogi.hpp"
-#define outboard(x) (x>96)||(x%11>8)
+
 
 /*
 0 = 步兵 8  = 成金
@@ -13,20 +13,20 @@
 */
 
 uint8_t goma_move_vector[71] = {
--11,
+245,
 1,
--21,-23,
--10,-11,-12,10,12,
+235,233,
+246,245,244,10,12,
 0,2,5,7,
 1,6,3,4,
--10,-11,-12,1,-1,11,
--10,-11,-12,1,-1,10,11,12,
--10,-11,-12,1,-1,11,
--10,-11,-12,1,-1,11,
--10,-11,-12,1,-1,11,
--10,-11,-12,1,-1,11,
--10,-12,10,12,4,3,6,1,
-2,0,5,7,1,-1,11,-11
+246,245,244,1,255,11,
+246,245,244,1,255,10,11,12,
+246,245,244,1,255,11,
+246,245,244,1,255,11,
+246,245,244,1,255,11,
+246,245,244,1,255,11,
+246,244,10,12,4,3,6,1,
+2,0,5,7,1,255,11,245
 };
 
 uint8_t goma_flow_vector[71] = {
@@ -46,8 +46,8 @@ uint8_t goma_flow_vector[71] = {
 1,1,1,1,0,0,0,0
 };
 
-uint8_t uv_table[8] = {-12, -11, -10, -1, 1, 10, 11, 12};
-uint8_t goma_index_vector[14] = {0, 1, 2, 4, 9, 13, 17, 23, 31, 37, 43, 49, 55, 63, 71};
+uint8_t uv_table[9] = {244, 245, 246, 255, 1, 10, 11, 12};
+uint8_t goma_index_vector[15] = {0, 1, 2, 4, 9, 13, 17, 23, 31, 37, 43, 49, 55, 63, 71};
 
 void Shogi::BoardInit() {
 	activated_flag = true;
@@ -79,11 +79,14 @@ void Shogi::BoardInit() {
 	for(uint8_t i = 1; i<=40; i++) {
 		board[goma_pos[i]] = i;
 	}
+
+	round = 0;
+
 }
 
-vector<unsigned short> Shogi::FetchMoves(uint8_t mode) {
+vector<uint16_t> Shogi::FetchMoves(uint8_t mode) {
 
-	vector<unsigned short> movelist;
+	vector<uint16_t> movelist;
 	movelist.reserve(1024);
 
 	uint8_t direct_attack_graph[97]			=	{0};
@@ -97,7 +100,7 @@ vector<unsigned short> Shogi::FetchMoves(uint8_t mode) {
 	// basic moving rule procedure
 	for(uint8_t goma_idx = 1; goma_idx <= 40; goma_idx++) {
 		
-		uint8_t onboard = ((goma_cde[goma_idx] & MASK_goma_onboard) >> 5);
+		uint8_t onboard = ~((goma_cde[goma_idx] & MASK_goma_onboard) >> 5);
 		uint8_t owner = ((goma_cde[goma_idx] & MASK_goma_owner) >> 4);
 		uint8_t fulid = ((goma_cde[goma_idx] & MASK_goma_fulid));
 
@@ -108,7 +111,7 @@ vector<unsigned short> Shogi::FetchMoves(uint8_t mode) {
 			uint8_t pos = goma_pos[goma_idx];
 
 			for(int idx = goma_index_vector[fulid]; idx < goma_index_vector[fulid+1]; idx++) {
-				if(goma_flow_vector[goma_idx]) {
+				if(goma_flow_vector[idx]) {
 					uint8_t uv = uv_table[goma_move_vector[idx]] * dr;
 					uint8_t npos = pos + uv;
 					bool second_flow_start = false;
@@ -197,6 +200,44 @@ vector<unsigned short> Shogi::FetchMoves(uint8_t mode) {
 			// placing move
 		}
 	}
+	// Test used
+	cout << "Direct Attack\n";
 
-	return movelist
+	for(uint8_t p=0;p<97;p++) {
+		if(outboard(p)) {
+			cout << "\n";
+			continue;
+		}
+		uint8_t unit = board[p];
+
+		cout << (int)direct_attack_graph[p] << "  ";
+	}
+	cout << "\n\n";
+
+	cout << "First Flow Attack\n";
+
+	for(uint8_t p=0;p<97;p++) {
+		if(outboard(p)) {
+			cout << "\n";
+			continue;
+		}
+		uint8_t unit = board[p];
+
+		cout << (int)first_flow_attack_graph[p] << "  ";
+	}
+	cout << "\n\n";
+
+	cout << "Second Flow Attack\n";
+
+	for(uint8_t p=0;p<97;p++) {
+		if(outboard(p)) {
+			cout << "\n";
+			continue;
+		}
+		uint8_t unit = board[p];
+
+		cout << (int)second_flow_attack_graph[p] << "  ";
+	}
+	cout << "\n";
+	return movelist;
 }
