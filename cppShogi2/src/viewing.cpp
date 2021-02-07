@@ -1,8 +1,8 @@
 #include "shogi.hpp"
 
 string note_table[32] = {
-	"+步 ", "+香 ", "+桂 ", "+銀 ", "+角 ", "+飛 ", "+金 ", "+王 ", "+と", "+杏 ", "+圭 ", "+全 ", "+馬 ", "+龍 ", "nothing", "nothing",
-	"-步 ", "-香 ", "-桂 ", "-銀 ", "-角 ", "-飛 ", "-金 ", "-王 ", "-と", "-杏 ", "-圭 ", "-全 ", "-馬 ", "-龍 ", "nothing", "nothing"
+	"+步 ", "+香 ", "+桂 ", "+銀 ", "+角 ", "+飛 ", "+金 ", "+王 ", "+と ", "+杏 ", "+圭 ", "+全 ", "+馬 ", "+龍 ", "nothing", "nothing",
+	"-步 ", "-香 ", "-桂 ", "-銀 ", "-角 ", "-飛 ", "-金 ", "-王 ", "-と ", "-杏 ", "-圭 ", "-全 ", "-馬 ", "-龍 ", "nothing", "nothing"
 };
 
 void Shogi::EasyBoardPrint() {
@@ -20,4 +20,24 @@ void Shogi::EasyBoardPrint() {
 		}
 	}
 	cout << "\n";
+
+	int goma_recorder[16] = {0};
+
+	for(uint8_t goma_idx = 3; goma_idx <= 40; goma_idx++) {
+		uint8_t notonboard = (goma_cde[goma_idx] & MASK_goma_onboard);
+		if(notonboard) {
+			uint8_t owner = ((goma_cde[goma_idx] & MASK_goma_owner) >> 4);
+			uint8_t ezyid = (goma_cde[goma_idx] & MASK_goma_ezyid);
+			goma_recorder[owner*8+ezyid]++;
+		}
+	}
+	cout << "\n--------------------------------------\n";
+	cout << "駒台：  步  香  桂  銀  金  角  飛\n";
+	cout << "先手：   " << goma_recorder[0] << "   " << goma_recorder[1] 
+	<< "   " << goma_recorder[2] << "   " << goma_recorder[3] << "   " << goma_recorder[6] 
+	<< "   " << goma_recorder[4] << "   " << goma_recorder[5] << "\n";
+	cout << "後手：   " << goma_recorder[8] << "   " << goma_recorder[9] 
+	<< "   " << goma_recorder[10] << "   " << goma_recorder[11] << "   " << goma_recorder[14] 
+	<< "   " << goma_recorder[12] << "   " << goma_recorder[13] << "\n";
+	cout << "--------------------------------------\n";
 }

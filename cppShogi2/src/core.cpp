@@ -97,18 +97,25 @@ vector<uint16_t> Shogi::FetchMoves(uint8_t mode) {
 
 	uint8_t chesser = (round & 1);
 
+	uint8_t placing_goma[8] = {0};
+	uint8_t mdr = (chesser == 0 ? 1 : -1);
+	uint8_t nifu[9] = {0};
+
 	// basic moving rule procedure
 	for(uint8_t goma_idx = 1; goma_idx <= 40; goma_idx++) {
 		
-		uint8_t onboard = ~((goma_cde[goma_idx] & MASK_goma_onboard) >> 5);
+		uint8_t notonboard = ((goma_cde[goma_idx] & MASK_goma_onboard) >> 5);
 		uint8_t owner = ((goma_cde[goma_idx] & MASK_goma_owner) >> 4);
 		uint8_t fulid = ((goma_cde[goma_idx] & MASK_goma_fulid));
+		uint8_t dr = (owner == 0 ? 1 : -1);
 
 		bool addmove_flag = (owner == chesser);
 
-		if(onboard) {
-			uint8_t dr = (owner == 0 ? 1 : -1);
+		if(!notonboard) {
 			uint8_t pos = goma_pos[goma_idx];
+			if(fulid == 0 and owner == chesser) {
+				nifu[pos % 11] = 1;
+			}
 
 			for(int idx = goma_index_vector[fulid]; idx < goma_index_vector[fulid+1]; idx++) {
 				if(goma_flow_vector[idx]) {
@@ -120,7 +127,7 @@ vector<uint16_t> Shogi::FetchMoves(uint8_t mode) {
 					while(!outboard(npos)) {
 						uint8_t unit = board[npos];
 						if(second_flow_start) second_flow_attack_graph[npos] |= (owner+1);
-						else first_flow_attack_graph[npos] |= (owner+1);
+						else first_flow_attack_graph[npos] += 1 + owner * 15;
 
 						if(unit > 2) {
 							if(second_flow_start) break;
@@ -196,11 +203,65 @@ vector<uint16_t> Shogi::FetchMoves(uint8_t mode) {
 				}
 			}
 		} else {
-			;
-			// placing move
+			if(owner != chesser) continue;
+			if(placing_goma[fulid]) continue;
+			placing_goma[fulid] = goma_idx;
 		}
 	}
+
+
+	for(uint8_t pos = 0; pos < 97; pos++) {
+		if(outboard(pos))continue;
+		if(board[pos])continue;
+
+		if(placing_goma[0] and !nifu[pos % 11] and (uint8_t)(96 * chesser + pos * mdr) > 10) {
+			movelist.push_back(32768 + ((uint16_t)pos << 7));
+		}
+		else if(placing_goma[1] and (uint8_t)(96 * chesser + pos * mdr) > 10) {
+			movelist.push_back(32769 + ((uint16_t)pos << 7));
+		}
+		else if(placing_goma[2] and (uint8_t)(96 * chesser + pos * mdr) > 21) {
+			movelist.push_back(32770 + ((uint16_t)pos << 7));
+		}
+		else if(placing_goma[3]) {
+			movelist.push_back(32771 + ((uint16_t)pos << 7));
+		}
+		else if(placing_goma[4]) {
+			movelist.push_back(32772 + ((uint16_t)pos << 7));
+		}
+		else if(placing_goma[5]) {
+			movelist.push_back(32773 + ((uint16_t)pos << 7));
+		}
+		else if(placing_goma[6]) {
+			movelist.push_back(32774 + ((uint16_t)pos << 7));
+		}
+	}
+
+	if(mode == 0) return movelist;
+
+	// Filter move that ignores checkmate (or even worse, cause checkmated)
+	
+	vector<uint16_t> nmovelist;
+	nmovelist.reserve(movelist.size());
+
+	uint8_t chesser_idc = chesser + 1;
+	uint8_t chesser_fmask = 15 + 105 * chesser;
+	uint8_t kpos = goma_pos[chesser_idc];
+	
+	uint8_t direct_attack = ((direct_attack_graph[kpos] & chesser_idc) ? 1 : 0);
+	uint8_t fflow_attack = ((first_flow_attack_graph[kpos] & chesser_fmask) >> (4*chesser));
+
+	if(direct_attack + fflow_attack != 0) {
+
+	}
+
+	
+
+
+
+
 	// Test used
+	/*
 	cout << "Direct Attack\n";
 
 	for(uint8_t p=0;p<97;p++) {
@@ -239,5 +300,57 @@ vector<uint16_t> Shogi::FetchMoves(uint8_t mode) {
 		cout << (int)second_flow_attack_graph[p] << "  ";
 	}
 	cout << "\n";
+	*/
 	return movelist;
+
+}
+
+void Shogi::MakeMove(uint16_t move) {
+	
+	uint16_t placing_flag = (move & MASK_move_placing);
+	uint16_t upgrade_flag = (move & MASK_move_upgrade);
+	uint16_t npos = ((move & MASK_move_npos) >> 7);
+	uint16_t pos = (move & MASK_move_pos);
+	uint8_t chesser = (round & 1);
+
+	if(placing_flag) {
+
+		uint8_t target_gomaidx = 0;
+		for(int goma_idx=3;goma_idx<=40;goma_idx++) {
+			uint8_t notonboard = ((goma_cde[goma_idx] & MASK_goma_onboard) >> 5);
+			uint8_t owner = ((goma_cde[goma_idx] & MASK_goma_owner) >> 4);
+			uint8_t fulid = ((goma_cde[goma_idx] & MASK_goma_fulid));
+
+			if(!notonboard) continue;
+			if(chesser != owner) continue;
+			if(fulid != pos) continue;
+
+			target_gomaidx = goma_idx;
+			break;
+		}
+
+		board[npos] = target_gomaidx;
+		goma_pos[target_gomaidx] = npos;
+		goma_cde[target_gomaidx] ^= MASK_goma_onboard;
+
+	} else {
+
+		uint8_t target_gomaidx = board[pos];
+		uint8_t subject_gomaidx = board[npos];
+		
+		goma_pos[target_gomaidx] = npos;
+		board[pos] = 0;
+		board[npos] = target_gomaidx;		
+		if(upgrade_flag)
+			goma_cde[target_gomaidx] ^= MASK_goma_upgrade;				
+			
+		if(subject_gomaidx != 0) {	
+			goma_pos[subject_gomaidx] = 97 + chesser;
+			goma_cde[subject_gomaidx] ^= MASK_goma_onboard;
+			goma_cde[subject_gomaidx] &= ~MASK_goma_upgrade;
+			goma_cde[subject_gomaidx] ^= MASK_goma_owner;
+		}
+	}
+
+	round += 1;
 }
