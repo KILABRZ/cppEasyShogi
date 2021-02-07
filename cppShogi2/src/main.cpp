@@ -8,11 +8,23 @@ int main() {
 	Shogi c;
 	c.BoardInit();
 
-	for(int i=0;i<100;i++) {
-		c.EasyBoardPrint();
-		vector<uint16_t> movelist = c.FetchMoves(2);
+	c.EasyBoardPrint();
+
+	for(int i=0;i<10000;i++) {
+		
+		vector<uint16_t> movelist = c.FetchMoves(0);
+		if(movelist.size() == 0)break;
 		int l = rand() % movelist.size();
 		c.MakeMove(movelist[l]);
+		/*for(int i=0;i<movelist.size();i++) {
+			if(i == l) cout << "Hit ";
+			MoveExplainer(movelist[i]);
+		}
+		MoveExplainer(movelist[l]);
+		
+		c.EasyBoardPrint();*/
 	}
+
+	c.EasyBoardPrint();
 
 }

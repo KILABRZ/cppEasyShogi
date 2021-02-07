@@ -1,5 +1,6 @@
 #include <vector>
 #include <iostream>
+#include <algorithm>
 using namespace std;
 
 class Shogi{
@@ -37,4 +38,5 @@ const uint16_t MASK_move_upgrade = 16384;
 const uint16_t MASK_move_npos = 16256;
 const uint16_t MASK_move_pos = 127;
 
-
+void MoveExplainer(uint16_t move);
+void PosExplainer(uint8_t pos);

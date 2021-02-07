@@ -41,3 +41,22 @@ void Shogi::EasyBoardPrint() {
 	<< "   " << goma_recorder[12] << "   " << goma_recorder[13] << "\n";
 	cout << "--------------------------------------\n";
 }
+
+void MoveExplainer(uint16_t move) {
+	uint16_t placing_flag = (move & MASK_move_placing);
+	uint16_t upgrade_flag = (move & MASK_move_upgrade);
+	uint8_t npos = ((move & MASK_move_npos) >> 7);
+	uint8_t pos = (move & MASK_move_pos);
+
+	if(placing_flag) {
+		cout << "> 打入 " << note_table[pos] << "於 "; PosExplainer(npos); cout << "\n";
+	} else {
+		cout << "> "; PosExplainer(pos); cout <<" => "; PosExplainer(npos);
+		if(upgrade_flag) cout << " 成";
+		cout << "\n";
+	}
+}
+
+void PosExplainer(uint8_t pos) {
+	cout << "(" << (int)(9 - pos%11) << ", " << int((pos+1)/11+1) << ")";
+}
