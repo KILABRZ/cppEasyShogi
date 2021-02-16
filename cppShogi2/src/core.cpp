@@ -91,9 +91,6 @@ vector<uint16_t> Shogi::FetchMoves(uint8_t mode) {
 	vector<uint16_t> movelist;
 	movelist.reserve(1024);
 
-	uint8_t placing_goma[8] 		= {0};
-	uint8_t nifu[9] 				= {0};
-
 	uint8_t chesser = (round & 1);
 	uint8_t rival = 1 - (round & 1);
 
@@ -186,137 +183,14 @@ vector<uint16_t> Shogi::FetchMoves(uint8_t mode) {
 	((rival_flow_attack_graph[mkpos] & 128) >> 7);
 
 
+	bool fast_leave_flag = false;
+	bool dpos_flag = false;
+	bool no_placing_flag = false;
+	bool dpos[97] = {false};
+
 	if(n_flow_attack + n_direct_attack >= 2) {
-
-		cout << "兩王手！\n";
-		for(int idx = goma_index_vector[7]; idx < goma_index_vector[8]; idx++) {
-			uint8_t npos = mkpos + goma_move_vector[idx] * mdr;
-			if(outboard(npos)) continue;
-			mine_general_attack_graph[npos] = 1;
-			if(rival_direct_attack_graph[npos] || rival_flow_attack_graph[npos]) continue;
-			else {
-				uint8_t focus = board[npos];
-				if(focus == 0 || ((goma_cde[focus] & MASK_goma_owner) >> 4) == rival)
-					movelist.push_back(((uint16_t)npos << 7) + (uint16_t)mkpos);
-			}
-		}
-		goma_checked[mking] = true;
-
-	} else if(n_direct_attack == 1) {
-
-		cout << "直接攻擊！\n";
-
-		for(int idx = goma_index_vector[7]; idx < goma_index_vector[8]; idx++) {
-			uint8_t npos = mkpos + goma_move_vector[idx] * mdr;
-			if(outboard(npos)) continue;
-			mine_general_attack_graph[npos] = 1;
-			if(rival_direct_attack_graph[npos] || rival_flow_attack_graph[npos]) continue;
-			else {
-				uint8_t focus = board[npos];
-				if(focus == 0 || ((goma_cde[focus] & MASK_goma_owner) >> 4) == rival)
-					movelist.push_back(((uint16_t)npos << 7) + (uint16_t)mkpos);
-			}
-		}
-		goma_checked[mking] = true;
-
-		sort(critical_blocker_list, critical_blocker_list + cbl_length); // for the ease to use
-
-		uint8_t apos = goma_pos[direct_attacker];
-
-		for(uint8_t goma_idx = 3; goma_idx <= 40; goma_idx++) {
-			if(goma_checked[goma_idx]) continue;
-			
-			uint8_t notonboard = ((goma_cde[goma_idx] & MASK_goma_onboard) >> 5);
-			if(!notonboard) continue;
-
-			uint8_t fulid = ((goma_cde[goma_idx] & MASK_goma_fulid));
-			uint8_t pos = goma_pos[goma_idx];
-
-			bool critical_blocker_flag = false;
-			uint8_t critical_direction = 0;
-
-			if(critical_blocker_list[cbl_counter] == goma_idx) {
-				critical_blocker_flag = true;
-				critical_direction = critical_blocker_list[cbl_counter++];
-			}
-
-			for(uint8_t idx = goma_index_vector[fulid]; idx < goma_index_vector[fulid+1]; idx++) {
-				if(goma_flow_vector[idx]) {
-					uint8_t uv = uv_table[goma_move_vector[idx]] * mdr;
-					uint8_t npos = pos + uv;
-
-					if(critical_blocker_flag) {
-						if(uv != critical_direction && uv != (-1) * critical_direction)
-							continue;
-					}
-
-					bool break_flag = false;
-
-					while(!outboard(npos)) {
-						uint8_t focus = board[npos];
-						mine_general_attack_graph[npos] = 1;
-						if(focus != 0) {
-							if(npos == apos) {
-								if(fulid < 7 && (((uint8_t)(96 * chesser + pos * mdr) < 31) || ((uint8_t)(96 * chesser + npos * mdr) < 31))) {
-									movelist.push_back(16384 + ((uint16_t)npos << 7) + (uint16_t)pos);
-								}
-								if(fulid != 1 || ((uint8_t)(96 * chesser + npos * mdr) > 10)) {
-									movelist.push_back(((uint16_t)npos << 7) + (uint16_t)pos);
-								}
-								break_flag = true;
-							}
-							break;
-						}
-						npos += uv;
-					}
-
-					if(break_flag) break;
-
-				} else {
-					uint8_t uv = goma_move_vector[idx] * mdr;
-					uint8_t npos = pos + uv;
-					if(outboard(npos)) continue;
-					mine_general_attack_graph[npos] = 1;
-
-					if(critical_blocker_flag) {
-						if(uv != critical_direction && uv != (-1) * critical_direction)
-							continue;
-					}
-					
-					if(npos != apos) continue;
-
-					if(fulid < 4 && (((uint8_t)(96 * chesser + pos * mdr) < 31) || ((uint8_t)(96 * chesser + npos * mdr) < 31))) {
-						movelist.push_back(16384 + ((uint16_t)npos << 7) + (uint16_t)pos);
-					}
-
-					if(fulid == 0 && (uint8_t)(96 * chesser + pos * mdr) < 20) break;
-					if(fulid == 2 && (uint8_t)(96 * chesser + pos * mdr) < 42) break;
-
-					movelist.push_back(((uint16_t)npos << 7) + (uint16_t)pos);
-					break;
-
-				}
-			}
-		}
+		fast_leave_flag = true;
 	} else if(n_flow_attack == 1) {
-
-		cout << "流攻擊！\n";
-
-		for(int idx = goma_index_vector[7]; idx < goma_index_vector[8]; idx++) {
-			uint8_t npos = mkpos + goma_move_vector[idx] * mdr;
-			if(outboard(npos)) continue;
-			mine_general_attack_graph[npos] = 1;
-			if(rival_direct_attack_graph[npos] || rival_flow_attack_graph[npos]) continue;
-			else {
-				uint8_t focus = board[npos];
-				if(focus == 0 || ((goma_cde[focus] & MASK_goma_owner) >> 4) == rival)
-					movelist.push_back(((uint16_t)npos << 7) + (uint16_t)mkpos);
-			}
-		}
-		goma_checked[mking] = true;
-
-		sort(critical_blocker_list, critical_blocker_list + cbl_length); // for the ease to use
-
 		uint8_t defense_direction = 0;
 		for(uint8_t i = 0; i < 8; i++) {
 			if(rival_flow_attack_graph[mkpos] & (1 << i)){
@@ -324,270 +198,165 @@ vector<uint16_t> Shogi::FetchMoves(uint8_t mode) {
 				break;
 			}
 		}
-
 		defense_direction = uv_table[defense_direction] * (-1) * rdr;
 		uint8_t apos = mkpos + defense_direction;
-
-
-		bool block_point[256] = {false};
 		while(!outboard(apos)) {
-			if(board[apos] == 0) {
-				block_point[apos] = true;
-				apos += defense_direction;
-			}
-			else break;
+			dpos[apos] = true;
+			if(board[apos] != 0) break;
+			apos += defense_direction;
 		}
+		dpos_flag = true;
+	} else if(n_direct_attack == 1) {
+		dpos[goma_pos[direct_attacker]] = true;
+		dpos_flag = true;
+		no_placing_flag = true;
+	}
 
-		cout << "Attacker Position:"; PosExplainer(apos); cout << "\n";
-		cout << "Defense Direction: " << (int)defense_direction << "\n";
-		cout << "Raw Record: " << (int)rival_flow_attack_graph[mkpos] << "\n";
-
-		// Find the attacker position and the direction king get attacks
-
-
-		bool placing_goma[9] = {false};
-		bool nifu[9] = {false};
-
-		for(uint8_t goma_idx = 3; goma_idx <= 40; goma_idx++) {
-			if(goma_checked[goma_idx]) continue;
-			uint8_t notonboard = ((goma_cde[goma_idx] & MASK_goma_onboard) >> 5);
-			uint8_t fulid = ((goma_cde[goma_idx] & MASK_goma_fulid));
-			if(notonboard) {
-				placing_goma[fulid] = true;
-			}else {
-				if(fulid == 0) nifu[goma_pos[goma_idx] % 11] = true;
-			}
+	for(int idx = goma_index_vector[7]; idx < goma_index_vector[8]; idx++) {
+		uint8_t npos = mkpos + goma_move_vector[idx] * mdr;
+		if(outboard(npos)) continue;
+		mine_general_attack_graph[npos] = 1;
+		if(rival_direct_attack_graph[npos] || rival_flow_attack_graph[npos]) continue;
+		else {
+			uint8_t focus = board[npos];
+			if(focus == 0 || ((goma_cde[focus] & MASK_goma_owner) >> 4) == rival)
+				movelist.push_back(((uint16_t)npos << 7) + (uint16_t)mkpos);
 		}
+	}
+	goma_checked[mking] = true;
 
-		for(uint8_t goma_idx = 3; goma_idx <= 40; goma_idx++) {
-			if(goma_checked[goma_idx]) continue;
-			
-			uint8_t notonboard = ((goma_cde[goma_idx] & MASK_goma_onboard) >> 5);
-			uint8_t fulid = ((goma_cde[goma_idx] & MASK_goma_fulid));
+	if(fast_leave_flag) return movelist;
+	// Fast leave of two-attack case.
 
+	sort(critical_blocker_list, critical_blocker_list + cbl_length);
 
-			if(notonboard) {
-				for(uint8_t g = 0; g < 7; g++) {
-					if(!placing_goma[g])continue;
-					uint8_t dpos = mkpos + defense_direction;
-					while(!outboard(dpos)) {
-						if(board[dpos] != 0)break;
-						uint8_t focus = board[dpos];
-						if(focus != 0)continue;
+	bool placing_goma[9] = {false};
+	bool nifu[9] = {false};
 
-						if(g <= 1 && (uint8_t)(96 * chesser + dpos * mdr) < 9) continue;
-						if(g == 2 && (uint8_t)(96 * chesser + dpos * mdr) < 20) continue;
-						if(g != 0 || !nifu[dpos % 11]) {
-							movelist.push_back(32768 + ((uint16_t)dpos << 7) + g);
-						}
-						dpos += defense_direction;
-					}
-				}
-				continue;
-			}
+	for(uint8_t goma_idx = 3; goma_idx <= 40; goma_idx++) {
+		if(goma_checked[goma_idx]) continue;
+		uint8_t notonboard = ((goma_cde[goma_idx] & MASK_goma_onboard) >> 5);
+		uint8_t fulid = ((goma_cde[goma_idx] & MASK_goma_fulid));
+		if(notonboard) {
+			placing_goma[fulid] = true;
+		}else {
+			if(fulid == 0) nifu[goma_pos[goma_idx] % 11] = true;
+		}
+	}
 
-			uint8_t pos = goma_pos[goma_idx];
+	for(uint8_t goma_idx = 3; goma_idx <= 40; goma_idx++) {
+		if(goma_checked[goma_idx]) continue;
+		uint8_t notonboard = ((goma_cde[goma_idx] & MASK_goma_onboard) >> 5);
+		uint8_t fulid = ((goma_cde[goma_idx] & MASK_goma_fulid));
 
-			bool critical_blocker_flag = false;
-			uint8_t critical_direction = 0;
-
-			if(critical_blocker_list[cbl_counter] == goma_idx) {
-				critical_blocker_flag = true;
-				critical_direction = critical_blocker_list[cbl_counter++];
-			}
-
-			for(uint8_t idx = goma_index_vector[fulid]; idx < goma_index_vector[fulid+1]; idx++) {
-				if(goma_flow_vector[idx]) {
-					uint8_t uv = uv_table[goma_move_vector[idx]] * mdr;
-					uint8_t npos = pos + uv;
-
-					if(critical_blocker_flag) {
-						if(uv != critical_direction && uv != (-1) * critical_direction)
-							continue;
-					}
-
-					while(!outboard(npos)) {
-						uint8_t focus = board[npos];
-						mine_general_attack_graph[npos] = 1;
-						if(focus != 0) {
-							if(npos == apos) {
-								if(fulid < 7 && (((uint8_t)(96 * chesser + pos * mdr) < 31) || ((uint8_t)(96 * chesser + npos * mdr) < 31))) {
-									movelist.push_back(16384 + ((uint16_t)npos << 7) + (uint16_t)pos);
-								}
-								if(fulid != 1 || ((uint8_t)(96 * chesser + npos * mdr) > 10)) {
-									movelist.push_back(((uint16_t)npos << 7) + (uint16_t)pos);
-								}
-							}
-							break;
-						} else if(block_point[npos]) {
-							if(fulid < 7 && (((uint8_t)(96 * chesser + pos * mdr) < 31) || ((uint8_t)(96 * chesser + npos * mdr) < 31))) {
-								movelist.push_back(16384 + ((uint16_t)npos << 7) + (uint16_t)pos);
-							}
-							if(fulid != 1 || ((uint8_t)(96 * chesser + npos * mdr) > 10)) {
-								movelist.push_back(((uint16_t)npos << 7) + (uint16_t)pos);
-							}						
-						}
-						npos += uv;
-					}
-
-				} else {
-					uint8_t uv = goma_move_vector[idx] * mdr;
-					uint8_t npos = pos + uv;
-					if(outboard(npos)) continue;
-					mine_general_attack_graph[npos] = 1;
-
-					if(critical_blocker_flag) {
-						if(uv != critical_direction && uv != (-1) * critical_direction)
-							continue;
-					}
-					
-					if(npos != apos or !block_point[npos]) continue;
-
-					if(fulid < 4 && (((uint8_t)(96 * chesser + pos * mdr) < 31) || ((uint8_t)(96 * chesser + npos * mdr) < 31))) {
-						movelist.push_back(16384 + ((uint16_t)npos << 7) + (uint16_t)pos);
-					}
-
-					if(fulid == 0 && (uint8_t)(96 * chesser + pos * mdr) < 20) continue;
-					if(fulid == 2 && (uint8_t)(96 * chesser + pos * mdr) < 42) continue;
-
-					movelist.push_back(((uint16_t)npos << 7) + (uint16_t)pos);
-
+		if(notonboard) {
+			if(no_placing_flag) continue;
+			for(uint8_t g = 0; g < 7; g++) {
+				if(!placing_goma[g])continue;
+				for(uint8_t pos = 0; pos < 97; pos++) {
+					if(outboard(pos)) continue;
+					if(dpos_flag&&!dpos[pos]) continue;
+					uint8_t focus = board[pos];
+					if(focus != 0) continue;
+					if(g <= 1 && (uint8_t)(96 * chesser + pos * mdr) < 9) continue;
+					if(g == 2 && (uint8_t)(96 * chesser + pos * mdr) < 20) continue;
+					if(g != 0 || !nifu[pos % 11]) {
+						movelist.push_back(32768 + ((uint16_t)pos << 7) + g);
+					}					
 				}
 			}
+			continue;
 		}
 
-	} else {
-		// King is totally safe.
-
-		cout << "無事。\n";
-
-		for(int idx = goma_index_vector[7]; idx < goma_index_vector[8]; idx++) {
-			uint8_t npos = mkpos + goma_move_vector[idx] * mdr;
-			if(outboard(npos)) continue;
-			mine_general_attack_graph[npos] = 1;
-			if(rival_direct_attack_graph[npos] || rival_flow_attack_graph[npos]) continue;
-			else {
-				uint8_t focus = board[npos];
-				if(focus == 0 || ((goma_cde[focus] & MASK_goma_owner) >> 4) == rival)
-					movelist.push_back(((uint16_t)npos << 7) + (uint16_t)mkpos);
-			}
-		}
-		goma_checked[mking] = true;
-
-		bool placing_goma[9] = {false};
-		bool nifu[9] = {false};
-
-		for(uint8_t goma_idx = 3; goma_idx <= 40; goma_idx++) {
-			if(goma_checked[goma_idx])continue;
-			uint8_t notonboard = ((goma_cde[goma_idx] & MASK_goma_onboard) >> 5);
-			uint8_t fulid = ((goma_cde[goma_idx] & MASK_goma_fulid));
-			if(notonboard) {
-				placing_goma[fulid] = true;
-			} else {
-				if(fulid == 0) nifu[goma_pos[goma_idx] % 11] = true;
-			}
+		uint8_t pos = goma_pos[goma_idx];
+		
+		bool critical_blocker_flag = false;
+		uint8_t critical_direction = 0;
+		if(critical_blocker_list[cbl_counter] == goma_idx) {
+			critical_blocker_flag = true;
+			critical_direction = critical_blocker_list[cbl_counter++];
 		}
 
-		for(uint8_t goma_idx = 3; goma_idx <= 40; goma_idx++) {
-			if(goma_checked[goma_idx]) continue;
-			goma_checked[goma_idx] = true;
-			uint8_t notonboard = ((goma_cde[goma_idx] & MASK_goma_onboard) >> 5);
-			uint8_t fulid = ((goma_cde[goma_idx] & MASK_goma_fulid));
-			if(notonboard) {
-				for(uint8_t g = 0; g < 7; g++) {
-					if(!placing_goma[g])continue;
-					for(uint8_t pos = 0; pos < 97; pos++) {
-						if(outboard(pos))continue;
-						uint8_t focus = board[pos];
-						if(focus != 0)continue;
+		for(uint8_t idx = goma_index_vector[fulid]; idx < goma_index_vector[fulid+1]; idx++) {
+			if(goma_flow_vector[idx]) {
 
-						if(g <= 1 && (uint8_t)(96 * chesser + pos * mdr) < 9) continue;
-						if(g == 2 && (uint8_t)(96 * chesser + pos * mdr) < 20) continue;
-						if(g != 0 || !nifu[pos % 11]) {
-							movelist.push_back(32768 + ((uint16_t)pos << 7) + g);
-						}
+				uint8_t uv = uv_table[goma_move_vector[idx]] * mdr;
+				if(critical_blocker_flag) {
+					if(uv != critical_direction && uv != (uint8_t)((-1) * critical_direction)) {
+						continue;
 					}
 				}
-				continue;
-			}
 
-			uint8_t pos = goma_pos[goma_idx];
-
-			bool critical_blocker_flag = false;
-			uint8_t critical_direction = 0;
-
-			if(critical_blocker_list[cbl_counter] == goma_idx) {
-				critical_blocker_flag = true;
-				critical_direction = critical_blocker_list[cbl_counter++];
-			}
-
-			for(uint8_t idx = goma_index_vector[fulid]; idx < goma_index_vector[fulid+1]; idx++) {
-				if(goma_flow_vector[idx]) {
-
-					uint8_t uv = uv_table[goma_move_vector[idx]] * mdr;
-					uint8_t npos = pos + uv;
-
-					if(critical_blocker_flag) {
-						if(uv != critical_direction && uv != (-1) * critical_direction)
-							continue;
-					}
-
-					while(!outboard(npos)) {
-						uint8_t focus = board[npos];
-						mine_general_attack_graph[npos] = 1;
-						if(focus != 0) {
-							if(((goma_cde[focus] & MASK_goma_owner) >> 4) == rival) {
-								if(fulid < 7 && (((uint8_t)(96 * chesser + pos * mdr) < 31) || ((uint8_t)(96 * chesser + npos * mdr) < 31))) {
-									movelist.push_back(16384 + ((uint16_t)npos << 7) + (uint16_t)pos);
-								}
-								if(fulid != 1 || ((uint8_t)(96 * chesser + npos * mdr) > 10)) {
-									movelist.push_back(((uint16_t)npos << 7) + (uint16_t)pos);
-								}
-							}
-							break;
-						} else {
-							if(fulid < 7 && (((uint8_t)(96 * chesser + pos * mdr) < 31) || ((uint8_t)(96 * chesser + npos * mdr) < 31))) {
-								movelist.push_back(16384 + ((uint16_t)npos << 7) + (uint16_t)pos);
-							}
-							if(fulid != 1 || ((uint8_t)(96 * chesser + npos * mdr) > 10)) {
-								movelist.push_back(((uint16_t)npos << 7) + (uint16_t)pos);
-							}						
-						}
-						npos += uv;
-					}
-				} else {
-					uint8_t uv = goma_move_vector[idx] * mdr;
-					uint8_t npos = pos + uv;
-					if(outboard(npos)) continue;
-					mine_general_attack_graph[npos] = 1;
-
-					if(critical_blocker_flag) {
-						if(uv != critical_direction && uv != (-1) * critical_direction)
-							continue;
-					}
-
+				for(uint8_t npos = pos + uv; !outboard(npos); npos += uv) {
 					uint8_t focus = board[npos];
-
-					if(focus != 0 && ((goma_cde[focus] & MASK_goma_owner) >> 4) != rival) continue;
-
-					if(fulid < 4 && (((uint8_t)(96 * chesser + pos * mdr) < 31) || ((uint8_t)(96 * chesser + npos * mdr) < 31))) {
-						movelist.push_back(16384 + ((uint16_t)npos << 7) + (uint16_t)pos);
+					mine_general_attack_graph[npos] = 1;
+					
+					if(dpos_flag) {
+						if(!dpos[npos]) {
+							if(focus != 0)break;
+							else continue;
+						}
+						if(fulid < 7 && (((uint8_t)(96 * chesser + pos * mdr) < 31) || ((uint8_t)(96 * chesser + npos * mdr) < 31))) {
+							movelist.push_back(16384 + ((uint16_t)npos << 7) + (uint16_t)pos);
+						}
+						if(fulid != 1 || ((uint8_t)(96 * chesser + npos * mdr) > 10)) {
+							movelist.push_back(((uint16_t)npos << 7) + (uint16_t)pos);
+						}
+						if(focus != 0)break;
+						else continue;
 					}
 
-					if(fulid == 0 && (uint8_t)(96 * chesser + pos * mdr) < 20) continue;
-					if(fulid == 2 && (uint8_t)(96 * chesser + pos * mdr) < 42) continue;
-
-					movelist.push_back(((uint16_t)npos << 7) + (uint16_t)pos);
+					if(focus == 0) {
+						if(fulid < 7 && (((uint8_t)(96 * chesser + pos * mdr) < 31) || ((uint8_t)(96 * chesser + npos * mdr) < 31))) {
+							movelist.push_back(16384 + ((uint16_t)npos << 7) + (uint16_t)pos);
+						}
+						if(fulid != 1 || ((uint8_t)(96 * chesser + npos * mdr) > 10)) {
+							movelist.push_back(((uint16_t)npos << 7) + (uint16_t)pos);
+						}
+					} else {
+						if(((goma_cde[focus] & MASK_goma_owner) >> 4) == rival) {
+							if(fulid < 7 && (((uint8_t)(96 * chesser + pos * mdr) < 31) || ((uint8_t)(96 * chesser + npos * mdr) < 31))) {
+								movelist.push_back(16384 + ((uint16_t)npos << 7) + (uint16_t)pos);
+							}
+							if(fulid != 1 || ((uint8_t)(96 * chesser + npos * mdr) > 10)) {
+								movelist.push_back(((uint16_t)npos << 7) + (uint16_t)pos);
+							}
+						}
+						break;
+					}
 				}
+
+			} else {
+				uint8_t uv = goma_move_vector[idx] * mdr;
+				uint8_t npos = pos + uv;
+				if(outboard(npos)) continue;
+				mine_general_attack_graph[npos] = 1;
+
+				if(critical_blocker_flag) {
+					if(uv != critical_direction && uv != (uint8_t)((-1) * critical_direction)) {
+						continue;
+					}
+				}
+
+				uint8_t focus = board[npos];
+
+				if(dpos_flag&&!dpos[npos]) continue;
+				if(focus != 0 && ((goma_cde[focus] & MASK_goma_owner) >> 4) != rival) continue;
+
+				if(fulid < 4 && (((uint8_t)(96 * chesser + pos * mdr) < 31) || ((uint8_t)(96 * chesser + npos * mdr) < 31))) {
+					movelist.push_back(16384 + ((uint16_t)npos << 7) + (uint16_t)pos);
+				}
+
+				if(fulid == 0 && (uint8_t)(96 * chesser + pos * mdr) < 20) continue;
+				if(fulid == 2 && (uint8_t)(96 * chesser + pos * mdr) < 42) continue;
+
+				movelist.push_back(((uint16_t)npos << 7) + (uint16_t)pos);
 			}
 		}
-
 	}
 
 	if(mode == 0) return movelist;
-
 	return movelist;
-
 }
 
 void Shogi::MakeMove(uint16_t move) {
