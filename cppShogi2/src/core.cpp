@@ -169,6 +169,8 @@ vector<uint16_t> Shogi::FetchMoves(uint8_t mode) {
 	// Check the true move with those given information
 
 	uint8_t mkpos = goma_pos[mking];
+	uint8_t rkpos = goma_pos[rking];
+	uint8_t rkapos = rkpos + (11 * mdr);
 	uint8_t direct_attacker = rival_direct_attack_graph[mkpos];
 
 	uint8_t n_direct_attack = (direct_attacker != 0);
@@ -186,6 +188,7 @@ vector<uint16_t> Shogi::FetchMoves(uint8_t mode) {
 	bool fast_leave_flag = false;
 	bool dpos_flag = false;
 	bool no_placing_flag = false;
+	bool uchifu_flag = false;
 	bool dpos[97] = {false};
 
 	if(n_flow_attack + n_direct_attack >= 2) {
@@ -261,7 +264,11 @@ vector<uint16_t> Shogi::FetchMoves(uint8_t mode) {
 					if(g <= 1 && (uint8_t)(96 * chesser + pos * mdr) < 9) continue;
 					if(g == 2 && (uint8_t)(96 * chesser + pos * mdr) < 20) continue;
 					if(g != 0 || !nifu[pos % 11]) {
-						movelist.push_back(32768 + ((uint16_t)pos << 7) + g);
+						if(g == 0 && pos == rkapos && mode == 1) {
+							uchifu_flag = true;
+						} else {
+							movelist.push_back(32768 + ((uint16_t)pos << 7) + g);
+						}
 					}					
 				}
 			}
@@ -274,7 +281,7 @@ vector<uint16_t> Shogi::FetchMoves(uint8_t mode) {
 		uint8_t critical_direction = 0;
 		if(critical_blocker_list[cbl_counter] == goma_idx) {
 			critical_blocker_flag = true;
-			critical_direction = critical_blocker_list[cbl_counter++];
+			critical_direction = critical_direction_list[cbl_counter++];
 		}
 
 		for(uint8_t idx = goma_index_vector[fulid]; idx < goma_index_vector[fulid+1]; idx++) {
@@ -355,7 +362,154 @@ vector<uint16_t> Shogi::FetchMoves(uint8_t mode) {
 		}
 	}
 
-	if(mode == 0) return movelist;
+	if(mode == 0 || !uchifu_flag) return movelist;
+
+	bool uchifu_pass = false;
+
+	if(mine_general_attack_graph[rkapos] == 0) uchifu_pass = true;
+
+	if(!uchifu_pass) {
+		for(uint8_t idx = goma_index_vector[7]; idx < goma_index_vector[8]; idx++) {
+			uint8_t npos = rkpos + goma_move_vector[idx] * rdr;
+			if(outboard(npos)) continue;
+			if(mine_general_attack_graph[npos]) continue;
+			uint8_t focus = board[npos];
+			if(focus == 0 || ((goma_cde[focus] & MASK_goma_owner) >> 4) == chesser) {
+				uchifu_pass = true;
+			}
+		}
+	}
+
+	if(!uchifu_pass) {
+		uint8_t rklfpos = rkpos + 12 * mdr;
+		uint8_t rkrfpos = rkpos + 10 * mdr;
+		uint8_t rklpos = rkpos + 1 * mdr;
+		uint8_t rkrpos = rkpos + 1 * rdr;
+		uint8_t rklbpos = rkpos + 12 * rdr;
+		uint8_t rkrbpos = rkpos + 10 * rdr;
+
+		uint8_t focus;
+
+		if(!outboard(rklfpos) && !uchifu_pass){
+			focus = board[rklfpos];
+			if(focus != 0 && (goma_cde[focus] & MASK_goma_fulid) >= 5 && ((goma_cde[focus] & MASK_goma_owner) >> 4) == rival) {
+				uint8_t npos = rklfpos + 12 * mdr;
+				bool attacker_flag = false;
+				while(!outboard(npos)) {
+					uint8_t nfocus = board[npos];
+					if(nfocus != 0) {
+						if((goma_cde[nfocus] & MASK_goma_fulid) == 4 && ((goma_cde[nfocus] & MASK_goma_owner) >> 4) == chesser) {
+							attacker_flag = true;
+						}
+						break;
+					}
+					npos += 12 * mdr;
+				}
+				if(!attacker_flag) uchifu_pass = true;
+			}
+		}
+
+		if(!outboard(rkrfpos) && !uchifu_pass){
+			focus = board[rkrfpos];
+			if(focus != 0 && (goma_cde[focus] & MASK_goma_fulid) >= 5 && ((goma_cde[focus] & MASK_goma_owner) >> 4) == rival) {
+				uint8_t npos = rkrfpos + 10 * mdr;
+				bool attacker_flag = false;
+				while(!outboard(npos)) {
+					uint8_t nfocus = board[npos];
+					if(nfocus != 0) {
+						if((goma_cde[nfocus] & MASK_goma_fulid) == 4 && ((goma_cde[nfocus] & MASK_goma_owner) >> 4) == chesser) {
+							attacker_flag = true;
+						}
+						break;
+					}
+					npos += 10 * mdr;
+				}
+				if(!attacker_flag) uchifu_pass = true;
+			}
+		}
+
+		if(!outboard(rklpos) && !uchifu_pass){
+			focus = board[rklpos];
+			if(focus != 0 && (goma_cde[focus] & MASK_goma_fulid) >= 3 && (goma_cde[focus] & MASK_goma_fulid) != 5 && ((goma_cde[focus] & MASK_goma_owner) >> 4) == rival) {
+				uint8_t npos = rklpos + 1 * mdr;
+				bool attacker_flag = false;
+				while(!outboard(npos)) {
+					uint8_t nfocus = board[npos];
+					if(nfocus != 0) {
+						if((goma_cde[nfocus] & MASK_goma_fulid) == 5 && ((goma_cde[nfocus] & MASK_goma_owner) >> 4) == chesser) {
+							attacker_flag = true;
+						}
+						break;
+					}
+					npos += 1 * mdr;
+				}
+				if(!attacker_flag) uchifu_pass = true;
+			}
+		}
+
+		if(!outboard(rkrpos) && !uchifu_pass){
+			focus = board[rkrpos];
+			if(focus != 0 && (goma_cde[focus] & MASK_goma_fulid) >= 3 && (goma_cde[focus] & MASK_goma_fulid) != 5 && ((goma_cde[focus] & MASK_goma_owner) >> 4) == rival) {
+				uint8_t npos = rkrpos + 1 * rdr;
+				bool attacker_flag = false;
+				while(!outboard(npos)) {
+					uint8_t nfocus = board[npos];
+					if(nfocus != 0) {
+						if((goma_cde[nfocus] & MASK_goma_fulid) == 5 && ((goma_cde[nfocus] & MASK_goma_owner) >> 4) == chesser) {
+							attacker_flag = true;
+						}
+						break;
+					}
+					npos += 1 * rdr;
+				}
+				if(!attacker_flag) uchifu_pass = true;
+			}
+		}
+
+		if(!outboard(rklbpos) && !uchifu_pass){
+			focus = board[rklbpos];
+			if(focus != 0 && (goma_cde[focus] & MASK_goma_fulid) == 2 && ((goma_cde[focus] & MASK_goma_owner) >> 4) == rival) {
+				uint8_t npos = rklbpos + 12 * rdr;
+				bool attacker_flag = false;
+				while(!outboard(npos)) {
+					uint8_t nfocus = board[npos];
+					if(nfocus != 0) {
+						if((goma_cde[nfocus] & MASK_goma_fulid) == 4 && ((goma_cde[nfocus] & MASK_goma_owner) >> 4) == chesser) {
+							attacker_flag = true;
+						}
+						break;
+					}
+					npos += 12 * rdr;
+				}
+				if(!attacker_flag) uchifu_pass = true;
+			}
+		}
+
+		if(!outboard(rkrbpos) && !uchifu_pass){
+			focus = board[rkrbpos];
+			if(focus != 0 && (goma_cde[focus] & MASK_goma_fulid) == 2 && ((goma_cde[focus] & MASK_goma_owner) >> 4) == rival) {
+				uint8_t npos = rklbpos + 10 * rdr;
+				bool attacker_flag = false;
+				while(!outboard(npos)) {
+					uint8_t nfocus = board[npos];
+					if(nfocus != 0) {
+						if((goma_cde[nfocus] & MASK_goma_fulid) == 4 && ((goma_cde[nfocus] & MASK_goma_owner) >> 4) == chesser) {
+							attacker_flag = true;
+						}
+						break;
+					}
+					npos += 10 * rdr;
+				}
+				if(!attacker_flag) uchifu_pass = true;
+			}
+		}
+
+	}
+
+	if(uchifu_pass) {
+		movelist.push_back((uint16_t)32768 + (uint16_t)(rkapos << 7));
+	}
+
 	return movelist;
 }
 

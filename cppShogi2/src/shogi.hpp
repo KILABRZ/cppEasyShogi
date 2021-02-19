@@ -11,7 +11,7 @@ public:
 	uint8_t goma_cde[41];
 	uint8_t goma_pos[41];
 	
-	uint8_t round;
+	uint16_t round;
 
 	Shogi() {
 		activated_flag = false;
