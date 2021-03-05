@@ -23,7 +23,8 @@ public:
 	vector<uint16_t> FetchMoves(uint8_t mode);
 	void MakeMove(uint16_t move);
 	void EasyBoardPrint();
-	//	Shogi TryMove(uint16_t move);
+
+	vector<vector<int8_t>> BoardKnowledgeExtract();
 };
 
 #define outboard(x) ((x>96)||(x%11>8))

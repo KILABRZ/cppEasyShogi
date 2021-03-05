@@ -160,7 +160,6 @@ vector<uint16_t> Shogi::FetchMoves(uint8_t mode) {
 			else {
 				uint8_t npos = pos + goma_move_vector[idx] * rdr;
 				if(outboard(npos)) continue;
-				uint8_t focus = board[npos];
 				rival_direct_attack_graph[npos] = goma_idx;
 			}
 		}
