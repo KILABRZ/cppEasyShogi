@@ -10,3 +10,7 @@ As all the old project suck, I want to rewrite the whole project with some new d
 Hope it can be a much cleaner project in coding and using, 
 and maybe faster, for the shogi promotion.
 The detailed description of new design will be explained in new document.
+
+- cppShogi1 --> original cppShogi (complete)
+- cppShogi2 --> new design of cppShogi (under debugging)
+- shogiDojo --> A deployable web shogi program (under developing) 
