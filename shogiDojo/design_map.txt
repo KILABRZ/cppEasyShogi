@@ -1,0 +1,29 @@
+Shogi Dojo !!!!
+
+將棋道場。第一次開始寫有點進入著魔狀況，Code 走到一半就變成了地獄，所以刪檔重來。
+
+目標：
+
+	能讓兩個 player 透過網路，在本地不用進行運算將棋邏輯的情況下（還是需要有 render，解釋 move 等），
+	可以透過一個 server 完成配對，下一盤棋。
+
+	有一些可以考慮的性質，例如需不需要要求 client 和 server 一直保持連線？
+
+	要：Server 處理起來比較輕鬆，client 的角色和連線可以 bind 起來，因此處理起來比較乾淨。
+	不要：Client 處理起來比較輕鬆，client 可以不用維持連線狀態，斷線重連之類的變很簡單。
+
+	這個實做，先讓 client 可以不用維護與 server 的連線，也就是說連線只是工具而已，
+	server 需要另尋手段紀錄和保證 client 的身份。
+
+實做：
+
+	架構分成兩大塊，Hello Server 和 Core Server。
+
+	Hello Server 生成玩家身份的 Token，並且引導玩家和背後的 Core Server 連線，
+	這個 Core Server 可以放在不同機器上增加 load balancing 的能力。
+	每一個 Core Server 由一個 Core Thread 來組織，一台機器會架著一串 Core Thread，
+	目前設計只有同一臺機器上的 Core Thread 可以互相交流，多台機器等於多台不同的 Server。
+	但如果套一個資料庫在他們之中，可不可以達成多台機器架起大量的 Core Thread 都能彼此溝通呢？
+	這樣 Game Room 要維護在哪裡？
+
+	先不要想 load balancing 好了。先專注在 一 hello 一 core 的架構，然後祈禱這個架構很好往下發展。
