@@ -13,4 +13,3 @@ The detailed description of new design will be explained in new document.
 
 - cppShogi1 --> original cppShogi (complete)
 - cppShogi2 --> new design of cppShogi (under debugging)
-- shogiDojo --> A deployable web shogi program (under developing) 
