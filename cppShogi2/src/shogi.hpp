@@ -25,6 +25,12 @@ public:
 	void EasyBoardPrint();
 
 	vector<vector<int8_t>> BoardKnowledgeExtract();
+
+	void StrMakeMove(string move);
+	vector<string> StrFetchMoves(uint8_t mode);
+	
+	string StrSaveBoardState();
+	void StrLoadBoardState(string state);
 };
 
 #define outboard(x) ((x>96)||(x%11>8))

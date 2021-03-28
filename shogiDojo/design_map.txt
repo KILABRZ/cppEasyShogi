@@ -27,3 +27,5 @@ Shogi Dojo !!!!
 	這樣 Game Room 要維護在哪裡？
 
 	先不要想 load balancing 好了。先專注在 一 hello 一 core 的架構，然後祈禱這個架構很好往下發展。
+
+	然後 Shogi 應該要能輸出入一個字串形式的 board state 和 move list，方便溝通。
