@@ -29,3 +29,28 @@ Shogi Dojo !!!!
 	先不要想 load balancing 好了。先專注在 一 hello 一 core 的架構，然後祈禱這個架構很好往下發展。
 
 	然後 Shogi 應該要能輸出入一個字串形式的 board state 和 move list，方便溝通。
+
+
+
+初步完成了內部伺服器的樣子，還沒試著跑，還要在外面加一個 web 框框才行。
+目前 server 中的 player 只是一群虛擬存在的盒子而已，
+還沒有處理如何誠實進行勝負的手段，我覺得這應該要弄在這裡面才行。
+目前想到的方法，就是多架一個玩家資料庫，讓 server 的 player 從那個資料庫找玩家資料，
+而不是仰賴 client 提供（雖然是內部的，但應該被畫在這裡面吧？）
+
+
+
+						   Player
+						     
+						  |       ^
+            Interact gui  |       |    Render Board
+            Input Move    |       |    Give move hint
+						  | wsgi  |    Give Result
+						  |       |
+						  v       |
+						+------------+      |       +------------+
+						|   WEB      | ===socket==> |   SHOGI    |
+						|   WORKER   |      |       |   SERVER   |
+						+------------+      |       +------------+
+						              out   |  in    |   |   |   |
+						                    |       r1  r2  r3  r4
