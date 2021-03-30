@@ -4,14 +4,8 @@ import queue
 import threading
 from time import time
 from socket import socket, AF_INET, SOCK_STREAM
-from ShogiAgent import Shogi
-
-class Player:
-	def __init__(self, token, name, state):
-		self.token = token
-		self.name = name
-		self.state = state
-		self.create_time = time()
+from base.gameroom import GameRoom
+from base.player import Player
 
 all_players = dict()
 

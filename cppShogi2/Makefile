@@ -3,7 +3,7 @@
 all: python shogi_speed shogi_manual shogi_strmanual shogi_strspeed shogi_strsl
 
 python:
-	g++ -O3 -Wall -shared -std=c++11 -fPIC `python3 -m pybind11 --includes` ./src/core.cpp ./src/viewing.cpp ./src/extract.cpp ./src/pythonbinder.cpp -o ShogiAgent.so
+	g++ -O3 -Wall -shared -std=c++11 -fPIC `python3 -m pybind11 --includes` ./src/core.cpp ./src/viewing.cpp ./src/extract.cpp ./src/describe.cpp ./src/pythonbinder.cpp -o ShogiAgent.so
 shogi_manual:
 	g++ ./src/core.cpp ./src/viewing.cpp ./src/main_manual.cpp ./src/extract.cpp -o shogi_manual -O3
 shogi_speed:
