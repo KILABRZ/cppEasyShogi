@@ -137,6 +137,25 @@ class CoreThread(threading.Thread):
 					msg = gr.FetchGameState()
 					client.sendall(bytes(msg, 'utf-8'))
 
+				elif header == 'CheckRound':
+
+					if player.state != 'InGame':
+						WriteLog('Core Player State Error')
+						client.sendall(b'StateError')
+						continue
+
+					gr = token_gameroom[token]
+
+					try:
+						content = int(content)
+					except:
+						WriteLog('Message Format Error')
+
+					if content == gr.gameround:
+						return client.sendall(b'Unchanged')
+					else:
+						return client.sendall(gr.FetchGameState(), 'utf-8'))
+
 				elif header == 'MakeMove':
 
 					if player.state != 'InGame':

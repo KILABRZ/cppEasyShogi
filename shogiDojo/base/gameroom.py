@@ -21,6 +21,7 @@ class GameRoom:
 		self.another_token = token_b
 		self.winner_token = None
 		self.loser_token = None
+		self.gameround = 0
 
 		self.state = 'WaitReady'
 		self.movelist = list()
@@ -63,6 +64,7 @@ class GameRoom:
 			return 'MoveError'
 
 		self.shogi.StrMakeMove(move)
+		self.gameround += 1
 
 		self.movelist = self.shogi.StrFetchMoves(1)
 		self.boardstate = self.shogi.StrSaveBoardState()
