@@ -1,0 +1,1 @@
+gunicorn3 easy_flask:app
